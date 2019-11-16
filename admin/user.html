@@ -48,7 +48,7 @@
                         <!-- 给label标签的for属性赋值,值是input标签的id,那这样的话点击label就相当于点击了input -->
                         <br>
                         <label for="exampleInputFile">
-                            <img src="./images/uploads_icon.jpg" style="height: 50px;" alt="">
+                            <img src="./images/uploads_icon.jpg" style="height: 50px;" alt="" for="exampleInputFile">
                         </label>
                     </div>
                 </div>
@@ -68,6 +68,75 @@
             </form>
         </div>
     </div>
+    <script src="./libs/http.js"></script>
+    <script>
+        main();
+         //发送ajax请求 获取用户的所有信息
+        function main(){
+            $.ajax({
+             type:'get',
+             url:BigNew.user_detail,
+             success:function(backData){
+                console.log(backData);
+                //判断
+                if(backData.code == 200){
+                    // $('input.username').val(backData.data.username);
+                    // $('input.nickname').val(backData.data.nickname);
+                    // $('input.email').val(backData.data.email);
+                    // $('input.password').val(backData.data.password);
+                    for(var key in backData.data){
+                        $('input.'+key).val(backData.data[key]);
+                    }
+                    $('img.user_pic').attr('src',backData.data.userPic);
+                }
+             }
+         })
+        }
+
+         //给更换照片的按钮做一个值改变事件
+         $('#exampleInputFile').on('change',function(){
+            var icon = this.files[0];
+            console.log(icon);
+            var url = URL.createObjectURL(icon);
+             console.log(url);
+             $('img.user_pic').attr('src',url);
+         })
+
+         //给修改按钮做一个点击事件
+         $('button.btn-edit').on('click',function(e){
+             e.preventDefault();
+             //创建一个formData对象 
+             var fd = new FormData($('#form')[0]);
+             console.log(fd);
+             
+             $.ajax({
+                 type:'post',
+                 url:BigNew.user_edit,
+                 data:fd,
+                 contentType:false,
+                 processData:false,
+                 success:function(backData){
+                //    console.log(backData);
+                   //判断
+                   if(backData.code == 200){
+                       //第一中方法
+                    parent.window.location.reload();
+                   //第二种方法
+    //                 $.ajax({
+    //             url:window.BigNew.user_info,
+    //             success:function(backData){
+    //             console.log(backData);
+    //             parent.$('.user_info>span>i').text(backData.data.nickname);
+    //             parent.$('.user_info>img').attr('src',backData.data.userPic);
+    //             parent.$('.user_center_link>img').attr('src',backData.data.userPic);
+    //        }
+    //    })
+                       
+                   }
+                 }
+             })
+         })
+    </script>
 </body>
 
 </html>
