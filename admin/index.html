@@ -77,8 +77,21 @@
       
        })
        })
-
        
+       //首頁左側一級菜單點擊事件
+       $('div.level01').on('click',function(){
+           $(this).addClass('active').siblings('div').removeClass('active');
+ 
+           //判斷 點擊索引為1
+           if($(this).index() == 1){
+            $('ul.level02').slideToggle();
+            $('ul.level02>li:eq(0)>a')[0].click();
+           } 
+       })
+        
+       $('ul.level02>li').on('click',function(){
+        $(this).addClass('active').siblings('li').removeClass('active');
+       })
     </script>
 </body>
 </html>
