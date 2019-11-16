@@ -54,6 +54,8 @@
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
             <div class="modal-dialog" role="document">
               <div class="modal-content">
+                <!-- 设置一个隐藏域来储存id -->
+                <input type="hidden" name="" id="category_id">
                 <div class="modal-header">
                   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                   <h4 class="modal-title" id="exampleModalLabel">新增类别</h4>
@@ -71,8 +73,8 @@
                   </form>
                 </div>
                 <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
-                  <button type="button" class="btn btn-primary">确认</button>
+                  <button type="button" class="btn btn-default btn-cancel" data-dismiss="modal">取消</button>
+                  <button type="button" class="btn btn-primary btn-queren">确认</button>
                 </div>
               </div>
             </div>
@@ -85,7 +87,7 @@
             <td>{{v.slug}}</td>
             <td class="text-center">
                 <a href="javascript:void(0)" data-id={{v.id}} data-toggle="modal" data-target="#myModal" class=" btn btn-info btn-xs">编辑</a>
-                <a href="javascript:void(0)" data-id={{v.id}} class="btn btn-danger btn-xs">删除</a>
+                <a href="javascript:void(0)" data-id={{v.id}} class="btn btn-danger btn-xs btn-delete">删除</a>
             </td>
         </tr>
        {{/each}}
@@ -94,6 +96,9 @@
          //創建一個入口函數
          $(function(){
             //一:一進到頁面,顯示所有的類別
+            getdata();
+            //封装ajax请求
+           function getdata(){
             $.ajax({
                 type:'get',
                 url:BigNew.category_list,
@@ -102,12 +107,119 @@
                     //判斷
                     if(backData.code == 200){
                     var value = template('temp',backData);
-                    console.log(value);
+                    // console.log(value);
                     $('tbody').html(value);
                     }
                 }
             })
-  
+           }
+           //找出弹出来的模态框是属于新增分类 还是 编辑
+            $('#myModal').on('show.bs.modal', function (e) {
+              // show 方法调用之后立即触发该事件。
+              // 如果是通过点击某个作为触发器的元素，则此元素可以通过事件的 relatedTarget 属性进行访问。
+              console.log(e.relatedTarget);
+              //判断
+              if(e.relatedTarget == $('#xinzengfenlei')[0]){
+                //新增类别
+                $('#exampleModalLabel').text('新增分类');
+                $('#myModal .btn-queren').text('新增').addClass('btn-primary').removeClass('btn-success');
+                $('#myModal form')[0].reset();
+              }else{
+                //编辑类别
+                $('#exampleModalLabel').text('修改类别');
+                $('#myModal .btn-queren').text('编辑').addClass('btn-success').removeClass('btn-primary');
+                var name = $(e.relatedTarget).parent().prev().prev().text();
+                var slug = $(e.relatedTarget).parent().prev().text();
+                $('#recipient-name').val(name);
+                $('#message-text').val(slug);
+                $('#category_id').val($(e.relatedTarget).attr('data-id'));
+              }
+              
+            })
+
+            //给模态框的取消按钮做一个点击事件
+             $('#myModal .btn-cancel').on('click',function(){
+               $('#myModal form')[0].reset();
+             })
+
+             //给模态框中的 新增/编辑 按钮 做点击事件
+             $('#myModal .btn-queren').on('click',function(){
+                if($(this).hasClass('btn-primary')){
+                  // alert('新增');
+                  var valuename = $('#recipient-name').val().trim();
+                  var  valuenumber = $('#message-text').val().trim();
+                  //发送ajax请求
+                  $.ajax({
+                    type:'post',
+                    url:BigNew.category_add,
+                    data:{
+                      name:valuename,
+                      slug:valuenumber
+                    },
+                    success:function(backData){
+                      console.log(backData);
+                      //判断
+                      if(backData.code == 201){
+                        // alert(backData.msg);
+                        // $('#myModal').hide();//直接关闭页面
+                        $('#myModal').modal('hide');
+                        // window.location.reload();//刷新当前页面;
+                        getdata();//重新发送ajax请求,重新获取数据渲染页面
+                      }
+                    }
+                  })
+                }else{
+                  // alert('编辑');
+                  //获取编辑模态框 分类名称 分类别名 id
+                  var valuename = $('#recipient-name').val().trim();
+                  var  valuenumber = $('#message-text').val().trim();
+                  var id = $('#category_id').val().trim();
+                  //发送ajax请求
+                  $.ajax({
+                    type:'post',
+                    url:BigNew.category_edit,
+                    data:{
+                      id:id,
+                      name:valuename,
+                      slug:valuenumber
+                    },
+                    success:function(backData){
+                       console.log(backData);
+                       //判断
+                       if(backData.code == 200){
+                         // $('#myModal').hide();//直接关闭页面
+                        $('#myModal').modal('hide');
+                        // window.location.reload();//刷新当前页面;
+                        getdata();//重新发送ajax请求,重新获取数据渲染页面
+
+                       }
+                    }
+                  })
+                }
+             })
+
+             //给删除文章类别按钮做一个点击事件 因为是动态生成的 所以是注册委托事件
+           $('tbody').on('click','.btn-delete',function(){
+            if(confirm('你确定要删除吗?')){
+               var delete_id = $(this).attr('data-id');
+            console.log(delete_id);
+            $.ajax({
+              type:'post',
+              url:BigNew.category_delete,
+              data:{
+                id:delete_id
+              },
+              success:function(backData){
+                console.log(backData);
+                //判断
+                if(backData.code == 204){
+                  getdata();//重新发送ajax请求,重新获取数据渲染页面
+                }
+              }
+            })
+            }
+           })
+            
         })
       </script>
 </body>
