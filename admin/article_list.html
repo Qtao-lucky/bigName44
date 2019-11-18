@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="./css/iconfont.css">
     <link rel="stylesheet" href="./css/main.css">
     <script src="./libs/jquery-1.12.4.min.js"></script>
+    <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./libs/jquery.twbsPagination.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
 </head>
@@ -69,9 +71,203 @@
                 </tbody>
             </table>
             <div class="row text-center">
+                <!-- 分页列表 -->
+                <ul id="pagination-demo" class="pagination-sm"></ul>
+                <p style="display: none">没有数据</p>
             </div>
         </div>
     </div>
+    <!--创建一个分类模板 -->
+    <script id="temp" type="text/html">
+    <option value="">所有分类</option>
+    {{each data v}}
+    <option value="{{v.id}}">{{v.name}}</option>
+    {{/each}}
+   </script>
+    <!-- 创建一个文章列表模板 -->
+    <script id="temp2" type="text/html">
+        {{each data.data v}}
+        <tr>
+            <td>{{v.title}}</td>
+            <td>{{v.author}}</td>
+            <td>{{v.category}}</td>
+            <td class="text-center">{{v.date}}</td>
+            <td class="text-center">{{v.state}}</td>
+            <td class="text-center">
+                <a href="article_edit.html?id={{v.id}}" class="btn btn-default btn-xs">编辑</a>
+                <a href="javascript:void(0);" data-id="{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+   </script>
+    <script src="./libs/http.js"></script>
+    <script>
+        //创建一个入口函数
+        $(function () {
+            //发送ajax请求
+            $.ajax({
+                type: 'get',
+                url: BigNew.category_list,
+                success: function (backData) {
+                    console.log(backData);
+                    var reshtml = template('temp', backData);
+                    //判断
+                    if (backData.code == 200) {
+                        //将后台返回来的值赋值给下拉框
+                        $('#selCategory').html(reshtml);
+                    }
+                }
+            })
+            // console.log($('#selCategory').val().trim());
+              var mypage = 1;
+            //发送ajax请求 已经页面就能将所有的分类内容显示出来
+            $.ajax({
+                type: 'get',
+                url: BigNew.article_query,
+                data: {
+                    type: $('#selCategory').val().trim(),
+                    state: $('#selStatus').val().trim(),
+                    page: mypage,
+                    perpage: 8
+                },
+                success: function (backData) {
+                    console.log(backData);
+                    var resHtml = template('temp2', backData);
+                    // console.log(resHtml);
+                    //判断
+                    if (backData.code == 200) {
+                        //将后台返回来的值赋值给tbody
+                        $('tbody').html(resHtml);
+                        //分页插件
+                        $('#pagination-demo').twbsPagination({
+                            totalPages: backData.data.totalPage,
+                            visiblePages: 7,
+                            first: '首页',
+                            prev: '上一页',
+                            next: '下一页',
+                            last: '尾页',
+                            onPageClick: function (event, page) {
+                                //  console.log(page);
+                                mypage = page;
+                                $.ajax({
+                                    type: 'get',
+                                    url: BigNew.article_query,
+                                    data: {
+                                        type: $('#selCategory').val().trim(),
+                                        state: $('#selStatus').val().trim(),
+                                        page: page,
+                                        perpage: 8
+                                    },
+                                    success: function (backData) {
+                                        console.log(backData);
+                                        var resHtml = template('temp2', backData);
+                                        // console.log(resHtml);
+                                        //判断
+                                        if (backData.code == 200) {
+                                            //将后台返回来的值赋值给tbody
+                                            $('tbody').html(resHtml);
+                                        }
+                                    }
+                                })
+                            }
+                        });
+                    }
+                }
+            })
+
+            //给筛选按钮做点击事件
+            $('#btnSearch').on('click', function (e) {
+                e.preventDefault();
+                //再次发送ajax请求 渲染到页面上
+                $.ajax({
+                    type: 'get',
+                    url: BigNew.article_query,
+                    data: {
+                        type: $('#selCategory').val().trim(),
+                        state: $('#selStatus').val().trim(),
+                        page: 1,
+                        perpage: 8
+                    },
+                    success: function (backData) {
+                        console.log(backData);
+                        var resHtml = template('temp2', backData);
+                        // console.log(resHtml);
+                        //判断
+                        if (backData.code == 200) {
+                            //将后台返回来的值赋值给tbody
+                            $('tbody').html(resHtml);
+
+                            // //若点击了筛选按钮 下面的总页数也会跟着改变3
+                            +3
+                         
+                            if(backData.data.data.length == 0){
+                                $('#pagination-demo').hide();
+                                $('#pagination-demo').next().show();
+                            }else if(backData.data.data.length != 0){
+                                $('#pagination-demo').twbsPagination('changeTotalPages', backData.data.totalPage, 1); 
+                                $('#pagination-demo').show();
+                                $('#pagination-demo').next().hide();
+                            }
+                            // $('#pagination-demo').twbsPagination('changeTotalPages', backData.data.totalPage, 1); 
+                            // console.log('111112');
+                            
+                        }
+                    }
+                })
+            })
+
+            //给删除按钮做点击事件 //需要用到委托注册
+            $('tbody').on('click', '.delete', function () {
+                //获取每个文章的id
+                var id = $(this).attr('data-id');
+                // console.log(id);
+                //发送ajax请求
+                $.ajax({
+                    type: 'post',
+                    url: BigNew.article_delete,
+                    data: {
+                        id: id
+                    },
+                    success: function (backData) {
+                        console.log(backData);
+                        //判断
+                        if (backData.code == 204) {
+                            //    window.location.reload();  删除后直接跳转到首页 不适用
+                            //重新发送ajax请求 获取数据 重新渲染到页面
+                            $.ajax({
+                                type: 'get',
+                                url: BigNew.article_query,
+                                data: {
+                                    type: $('#selCategory').val().trim(),
+                                    state: $('#selStatus').val().trim(),
+                                    page: mypage,
+                                    perpage: 8
+                                },
+                                success: function (backData) {
+                                    console.log(backData);
+                                    var resHtml = template('temp2', backData);
+                                    // console.log(resHtml);
+                                    //判断 
+                                    if (backData.code == 200) {
+                                        //将后台返回来的值赋值给tbody
+                                        $('tbody').html(resHtml);
+                                      
+                                        
+                            //若点击了删除按钮 下面的总页数也会跟着改变
+                            $('#pagination-demo').twbsPagination('changeTotalPages', backData.data.totalPage, mypage);
+                        
+                                    }
+                                }
+                            })
+
+                        }
+                    }
+                })
+
+
+            })
+        })
+    </script>
 </body>
 
 </html>
