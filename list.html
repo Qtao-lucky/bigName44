@@ -227,13 +227,48 @@
     </div>
     <!-- 导包template -->
     <script src="./js/template-web.js"></script>
+    <!-- 文章搜索模板 -->
+    <script id="search_temp" type="text/html">
+        <div class="list_title">
+            <h3>{{data.data[0].category}}</h3>
+        </div>
+    {{each data.data v}}
+    <div class="common_news_list">
+        <a href="./article.html?id={{v.id}}" class="list_pic"><img src="{{v.cover}}" alt=""></a>
+        <h4><a href="./article.html?id={{v.id}}">{{v.title}}</a></h4>
+        <p>{{@ v.content}}</p>
+        <div class="new_info">
+            <span>标签：{{v.category}}&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<i class="fa fa-eye"></i>&nbsp;阅读( {{v.read}}
+                )&nbsp;&nbsp;&nbsp;<i class="fa fa-commenting"></i>&nbsp;评论( {{v.comments}} )</span>
+            <b>发布于 {{v.date}}</b>
+        </div>
+    </div>
+    {{/each}}
+    </script>
     <script>
        //创建入口函数
        $(function(){
-           //获取跟随地址过来的id
+           //获取通过url传递过来的文章id
            var id = window.location.search.split('=')[1];
            console.log(id);
-           
+         
+        //发送ajax请求 进行文章搜索 搜索相同id的文章
+        $.ajax({
+            type:'get',
+            url:'http://localhost:8080/api/v1/index/search',
+            data:{
+                type:id
+            },
+            success:function(backData){
+                console.log(backData);
+                if(backData.data.data.length == 0){
+                    $('.setfr').html('没有数据');
+                    return;
+                }
+                var reshtml = template('search_temp',backData);
+                $('.setfr').html(reshtml);
+            }
+        })
        })
     </script>
 </body>
